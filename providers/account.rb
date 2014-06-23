@@ -31,6 +31,7 @@ def load_current_resource
 end
 
 action :create do
+  group_resource             :create
   user_resource             :create
   dir_resource              :create
   authorized_keys_resource  :create
@@ -41,9 +42,11 @@ action :remove do
   # Removing a user will also remove all the other file based resources.
   # By only removing the user it will make this action idempotent.
   user_resource             :remove
+  group_resource            :remove
 end
 
 action :modify do
+  group_resource            :modify
   user_resource             :modify
   dir_resource              :create
   authorized_keys_resource  :create
@@ -51,6 +54,7 @@ action :modify do
 end
 
 action :manage do
+  group_resource            :manage
   user_resource             :manage
   dir_resource              :create
   authorized_keys_resource  :create
@@ -108,7 +112,7 @@ def user_resource(exec_action)
     home      my_home               if my_home
     shell     my_shell              if my_shell
     password  new_resource.password if new_resource.password
-    system    new_resource.system_user
+    system    new_resource.system_user if new_resource.system_user
     supports  :manage_home => manage_home, :non_unique => non_unique
     action    :nothing
   end
@@ -117,6 +121,19 @@ def user_resource(exec_action)
 
   # fixes CHEF-1699
   Etc.endgrent
+end
+
+def group_resource(exec_action)
+  return unless @create_group
+  non_unique = @non_unique
+  r = group new_resource.username do
+    gid new_resource.gid if new_resource.gid and new_resource.gid.is_a?(Integer)
+    system new_resource.system_user if new_resource.system_user
+    non_unique non_unique
+    action :nothing
+  end
+  r.run_action(exec_action)
+  new_resource.updated_by_last_action(true) if r.updated_by_last_action?
 end
 
 def dir_resource(exec_action)
