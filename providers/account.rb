@@ -93,13 +93,15 @@ def user_resource(exec_action)
   my_home, my_shell, manage_home, non_unique = @my_home, @my_shell, @manage_home, @non_unique
   my_dir = ::File.dirname(my_home)
 
-  r = directory "#{my_home} parent directory" do
-    path my_dir
-    recursive true
-    action    :nothing
+  if @manage_home
+    r = directory "#{my_home} parent directory" do
+      path my_dir
+      recursive true
+      action    :nothing
+    end
+    r.run_action(:create) unless exec_action == :remove
+    new_resource.updated_by_last_action(true) if r.updated_by_last_action?
   end
-  r.run_action(:create) unless exec_action == :remove
-  new_resource.updated_by_last_action(true) if r.updated_by_last_action?
 
   r = user new_resource.username do
     comment   new_resource.comment  if new_resource.comment
@@ -120,6 +122,7 @@ def user_resource(exec_action)
 end
 
 def dir_resource(exec_action)
+  return unless @manage_home
   ["#{@my_home}/.ssh", @my_home].each do |dir|
     r = directory dir do
       path        dir
@@ -135,6 +138,7 @@ def dir_resource(exec_action)
 end
 
 def authorized_keys_resource(exec_action)
+  return unless @manage_home
   # avoid variable scoping issues in resource block
   ssh_keys = Array(new_resource.ssh_keys)
 
@@ -154,6 +158,7 @@ def authorized_keys_resource(exec_action)
 end
 
 def keygen_resource(exec_action)
+  return unless @manage_home
   # avoid variable scoping issues in resource block
   fqdn, my_home = node['fqdn'], @my_home
 
