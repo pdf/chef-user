@@ -90,8 +90,8 @@ describe 'User::Attributes::Default' do
       @node[attr_ns]['non_unique'].must_equal "false"
     end
 
-    it "sets default create user group" do
-      @node[attr_ns]['create_user_group'].must_equal "true"
+    it "sets default create group" do
+      @node[attr_ns]['create_group'].must_equal "true"
     end
 
     it "sets default ssh keygen" do
